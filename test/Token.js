@@ -2,7 +2,7 @@ const {ethers} = require('hardhat')
 const {expect} = require('chai')
 
 const tokens = (n) => {
-  return ethers.utils.parseUnits(n.toString(), 'ethers')
+  return ethers.utils.parseUnits(n.toString(), 'ether')
 }
 
 describe('Token', () => {
@@ -14,23 +14,23 @@ describe('Token', () => {
     exchange
 
   beforeEach(async () => {
-    const Token=  await ethers.getContractFactory('Token')
+    const Token =  await ethers.getContractFactory('Token')
 
     // Assigning variables to the state of the deployed contract
     token = await Token.deploy('New Wave', 'NWV', 1000000)
 
     // Get accounts form ethers
-    accounts = await ethers.BaseContract.getSigners()
+    accounts = await ethers.getSigners()
     deployer = accounts[0]
     receiver = accounts[1]
     exchange = accounts[2]
   })
 
   // Declare the variables
-  const name = 'New Wave'
-  const symbol = 'NWV'
-  const decimals = '18'
-  const totalSupply = tokens('1000000')
+      const name = 'New Wave'
+      const symbol = 'NWV'
+      const decimals = '18'
+      const totalSupply = tokens('1000000')
 
   // Deployment block
   describe('Deployment', () => {
@@ -38,21 +38,20 @@ describe('Token', () => {
     it('has correct name', async () => {
       expect(await token.name()).to.equal(name)
     })
-
     it('has correct symbol', async () => {
-      expect(await token.symbol().to.equal(symbol))
+      expect(await token.symbol()).to.equal(symbol)
     })
 
     it('has correct decimals', async () => {
-      expect(await token.decimals().to.equal(decimals))
+      expect(await token.decimals()).to.equal(decimals)
     })
 
     it('has correct total supply', async () => {
-      expect(await token.totalSupply().to.equal(totalSupply))
+      expect(await token.totalSupply()).to.equal(totalSupply)
     })
 
     it('assigns total supply to deployer', async () => {
-      expect(await token.balanceOf(deployer.address).to.equal(totalSupply))
+      expect(await token.balanceOf(deployer.address)).to.equal(totalSupply)
     })
   })
 
@@ -66,13 +65,13 @@ describe('Token', () => {
     describe('Success', () => {
       beforeEach(async () => {
         amount = tokens(100)
-        transaction = await token.connect(deployer.address).transfer(receiver.address, amount)
+        transaction = await token.connect(deployer).transfer(receiver.address, amount)
         result = await transaction.wait()
       })
 
       // Variable checks
       it('transfers token balances', async () => {
-        expect(await token.balanceOf(deployer.address).to.equal(999900))
+        expect(await token.balanceOf(deployer.address)).to.equal(tokens(999900))
         expect(await token.balanceOf(receiver.address)).to.equal(amount)
       })
 
@@ -81,7 +80,7 @@ describe('Token', () => {
         const event = result.events[0]
 
         // Check the event for the transaction
-        expect(event.event).to.equal(Transfer)
+        expect(event.event).to.equal('Transfer')
 
         const args = event.args
 
@@ -106,7 +105,7 @@ describe('Token', () => {
         const amount = tokens(100)
 
         // Revert transaction if test run correctly
-        await expect(token.connect(deployer).transfer(receiver.address, ethers.constants.AddressZero, amount)).to.be.reverted
+        await expect(token.connect(deployer).transfer(ethers.constants.AddressZero, amount)).to.be.reverted
       })
     })
   })
@@ -118,23 +117,23 @@ describe('Token', () => {
 
       beforeEach(async () => {
         amount = tokens(100)
-        transaction = await token.connect(deployer.address).approve(exchange.address, amount)
+        transaction = await token.connect(deployer).approve(exchange.address, amount)
         result = await transaction.wait()
       })
 
       describe('Success', () => {
-        it('approves an allowance for delegated token spending', async () =>{
-          expect(await token.connect(deployer).approve(exchange.address, amount))
+        it('approves an allowance for delegated token spending', async () => {
+          expect(await token.allowance(deployer.address, exchange.address)).to.equal(amount)
         })
 
         it('emits Approval event', async () => {
-          const event = result.event[0]
+          const event = result.events[0]
           expect(event.event).to.equal('Approval')
 
           const args = event.args
           expect(args.owner).to.equal(deployer.address)
           expect(args.spender).to.equal(exchange.address)
-          expect(args, value).to.equal(amount)
+          expect(args.value).to.equal(amount)
         })
       })
 
@@ -176,21 +175,21 @@ describe('Token', () => {
       })
 
       it('emits Transfer event', async () => {
-        const event = result.event[0]
+        const event = result.events[0]
 
         expect(event.event).to.equal('Transfer')
 
         // Verify event arguments
-        const args = event.args()
+        const args = event.args
         expect(args.from).to.equal(deployer.address)
         expect(args.to).to.equal(receiver.address)
         expect(args.value).to.equal(amount)
       })
     })
 
-    describe('Failure', async () => {
+    describe('Failure', () => {
       it('rejects insufficient allowances', async () => {
-        const amount = tokens(100000000)
+        const invalidAmount = tokens(100000000)
 
         await expect(token.connect(exchange).transferFrom(deployer.address, receiver.address, invalidAmount)).to.be.reverted
       })
