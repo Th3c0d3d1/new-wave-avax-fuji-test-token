@@ -1,7 +1,7 @@
 const { getContractFactory } = require("@nomiclabs/hardhat-ethers/types");
 
 async function main() {
-  const Token = await getContractFactory('Token');
+  const Token = await ethers.getContractFactory('Token');
 
   const name = 'New Wave';
   const symbol = 'NWV';
